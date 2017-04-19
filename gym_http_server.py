@@ -8,6 +8,7 @@ import numpy as np
 import six
 import argparse
 import sys
+import binascii
 
 import logging
 logger = logging.getLogger('werkzeug')
@@ -68,8 +69,11 @@ class Envs(object):
         if render:
             env.render()
         [observation, reward, done, info] = env.step(nice_action)
-        obs_jsonable = env.observation_space.to_jsonable(observation)
-        return [obs_jsonable, reward, done, info]
+        if observation.dtype == 'uint8':
+            observation = binascii.hexlify(observation.tobytes()).decode('ascii')
+        else:
+            observation = env.observation_space.to_jsonable(observation)
+        return [observation, reward, done, info]
 
     def get_action_space_contains(self, instance_id, x):
         env = self._lookup_env(instance_id)
@@ -123,7 +127,7 @@ class Envs(object):
             v_c = lambda count: False
         else:
             v_c = lambda count: count % video_callable == 0
-        self.envs[instance_id] = wrappers.Monitor(env, directory, force=force, resume=resume, video_callable=v_c) 
+        self.envs[instance_id] = wrappers.Monitor(env, directory, force=force, resume=resume, video_callable=v_c)
 
     def monitor_close(self, instance_id):
         env = self._lookup_env(instance_id)
@@ -279,7 +283,7 @@ def env_action_space_sample(instance_id):
     Returns:
 
     	- action: a randomly sampled element belonging to the action_space
-    """  
+    """
     action = envs.get_action_space_sample(instance_id)
     return jsonify(action = action)
 
@@ -287,14 +291,14 @@ def env_action_space_sample(instance_id):
 def env_action_space_contains(instance_id, x):
     """
     Assess that value is a member of the env's action_space
-    
+
     Parameters:
         - instance_id: a short identifier (such as '3c657dbc')
         for the environment instance
 	- x: the value to be checked as member
     Returns:
         - member: whether the value passed as parameter belongs to the action_space
-    """  
+    """
 
     member = envs.get_action_space_contains(instance_id, x)
     return jsonify(member = member)

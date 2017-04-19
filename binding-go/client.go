@@ -2,6 +2,7 @@ package gym
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -315,6 +316,16 @@ func normalizeSpaceElem(obs interface{}) (interface{}, error) {
 		return nil, errors.New("unsupported observation: nil")
 	}
 	switch obs := obs.(type) {
+	case string:
+		buf, err := hex.DecodeString(obs)
+		if err != nil {
+			return nil, errors.New("invalid hex observation")
+		}
+		res := make([]float64, len(buf))
+		for i, x := range buf {
+			res[i] = float64(x)
+		}
+		return res, nil
 	case float64:
 		return int(obs), nil
 	case []interface{}:
